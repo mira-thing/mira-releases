@@ -1,0 +1,47 @@
+{
+  "$schema": "https://terbium.app/schemas/manifest/v1.json",
+  "manifest_version": 1,
+  "updated_at": "2026-07-26T00:00:00Z",
+  "project": {
+    "id": "mira",
+    "name": "Mira",
+    "description": "Free, open source, standalone firmware for the Spotify Car Thing. No companion app, no account, no subscription.",
+    "publisher": "MustakimK",
+    "publisher_url": "https://github.com/mira-thing",
+    "license": "GPL-3.0/Apache-2.0",
+    "website": "https://github.com/mira-thing/mira-releases",
+    "source_url": "https://github.com/mira-thing",
+    "issue_url": "https://github.com/mira-thing/mira-releases/issues",
+    "support_url": "https://discord.gg/SR2Pne7EPM",
+    "icon_url": "https://github.com/mira-thing.png",
+    "banner_url": null,
+    "screenshots": []
+  },
+  "channels": {
+    "stable": {
+      "name": "Stable",
+      "description": "Release builds of Mira.",
+      "stability": "stable",
+      "default": true,
+      "latest": "1.0.0",
+      "releases": ["1.0.0"]
+    }
+  },
+  "releases": {
+    "1.0.0": {
+      "version": "1.0.0",
+      "channel": "stable",
+      "released_at": "2026-07-14T00:00:00Z",
+      "summary": "First public release: on-device voice control, karaoke lyrics, podcasts, full physical controls.",
+      "changelog": "First public release of Mira.\n\n- 100% on-device voice control (\"hey mira\" play/queue/volume/transport)\n- Album art + synced lyrics with karaoke word-by-word highlighting\n- Podcast support with synced transcripts\n- Full physical controls: volume knob, 4 presets, back, power menu\n- Device picker, Liked Songs saving, multi-phone Bluetooth pairing\n- Internet via Bluetooth tether (phone) or USB tether (Windows/Mac/Linux)",
+      "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.0.0",
+      "yanked": null,
+      "deprecated": false,
+      "download": {
+        "url": "https://github.com/mira-thing/mira-releases/releases/download/v1.0.0/mira_firmware_v1.0.0.zip",
+        "size": 480705712,
+        "sha256": "a727e05f3c0c010c79ccfaedbb1fa9e38c527d98229c85acbabcac15829869ac"
+      }
+    }
+  }
+}
