@@ -38,7 +38,7 @@
       "yanked": null,
       "deprecated": false,
       "download": {
-        "url": "https://github.com/mira-thing/mira-releases/releases/download/v1.0.0/mira_firmware_v1.0.0.zip",
+        "url": "https://mira-firmware.mira-thing.workers.dev/v1.0.0/mira_firmware_v1.0.0.zip",
         "size": 480705712,
         "sha256": "a727e05f3c0c010c79ccfaedbb1fa9e38c527d98229c85acbabcac15829869ac"
       }
