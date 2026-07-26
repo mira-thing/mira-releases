@@ -63,12 +63,12 @@ Everything runs completely on the device. No cloud, no account, no subscription.
    ```powershell
    irm https://driver.terbium.app/get | iex
    ```
-2. Download `mira_firmware_v1.0.0.zip` from the releases page and unzip it.
+2. Download `mira_firmware_v1.0.0.zip` from the releases page. No need to unzip it.
 3. Hold **buttons 1 + 4** on the Car Thing while plugging in the USB cable.
    - The screen staying black means it's ready to flash.
-4. Open [Terbium](https://terbium.app) and follow the prompts to prepare the device.
-   - Terbium may not work reliably on all browsers, if it does not try Google Chrome
-5. Choose **"Restore Local Folder"** and select the unzipped folder from step 2.
+4. Open [Terbium](https://terbium.app) in **Google Chrome** or **Microsoft Edge**.
+5. Under **"Choose your firmware"**, click **Local archive** and select the Mira zip from step 2.
+   - Heads up: Terbium preselects a different firmware by default. Make sure it shows the Mira zip you picked before flashing.
 6. Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
 7. When Terbium says flashing is complete, unplug and replug the USB cable.
 
