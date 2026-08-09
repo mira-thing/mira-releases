@@ -1,0 +1,11 @@
+{
+  "policy_version": 1,
+  "mandatory": ["1.1.0"],
+  "notes": {
+    "1.1.0": [
+      "Clock/Screensaver",
+      "Setup progress bar on first boot",
+      "Fixes for Android and iPhone volume"
+    ]
+  }
+}
