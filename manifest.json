@@ -1,7 +1,7 @@
 {
   "$schema": "https://terbium.app/schemas/manifest/v1.json",
   "manifest_version": 1,
-  "updated_at": "2026-07-26T00:00:00Z",
+  "updated_at": "2026-08-18T00:00:00Z",
   "project": {
     "id": "mira",
     "name": "Mira",
@@ -23,11 +23,29 @@
       "description": "Release builds of Mira.",
       "stability": "stable",
       "default": true,
-      "latest": "1.0.0",
-      "releases": ["1.0.0"]
+      "latest": "1.1.0",
+      "releases": [
+        "1.1.0",
+        "1.0.0"
+      ]
     }
   },
   "releases": {
+    "1.1.0": {
+      "version": "1.1.0",
+      "channel": "stable",
+      "released_at": "2026-08-18T00:00:00Z",
+      "summary": "Clock screensaver, update notifications, and fixes for Android and iPhone volume.",
+      "changelog": "- Clock screensaver\n- Update notifications\n- Volume fixes for Android and iPhone\n- Customizable UI scale (thanks to Serubin)\n- Bigger playback control buttons",
+      "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.1.0",
+      "yanked": null,
+      "deprecated": false,
+      "download": {
+        "url": "https://mira-firmware.mira-thing.workers.dev/v1.1.0/mira_firmware_v1.1.0.zip",
+        "size": 505949089,
+        "sha256": "7d4954f50b6039eb0be6e4d195d948c93e1b74330b143a954fd1c753b6de7f50"
+      }
+    },
     "1.0.0": {
       "version": "1.0.0",
       "channel": "stable",
