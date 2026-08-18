@@ -8,6 +8,10 @@ No companion app, no extra account, no subscription. Flash it, connect your phon
 (Bluetooth) or PC (USB) for internet, sign into Spotify once, and
 see and control what's playing across all your devices. 
 
+## Support
+
+Mira is free and open source. If you'd like to support development, you can do so on [GitHub Sponsors](https://github.com/sponsors/MustakimK) or [Ko-fi](https://ko-fi.com/MustakimK). Every bit genuinely helps and it's what makes this sustainable to keep working on.
+
 ---
 
 ## Things to know before you flash
@@ -29,7 +33,8 @@ see and control what's playing across all your devices.
 - **Pick which of your devices plays** right from the Car Thing
 - **Save the current song to Liked Songs**
 - **Pair multiple Bluetooth phones**
-- **Customizable Settings** lyric-sync offset, knob volume step, brightness (auto or manual)
+- **Clock Screensaver**
+- **Customizable Settings** lyric-sync offset, knob volume step, brightness (auto or manual), UI Scale
 
 ### Voice control
 
@@ -51,11 +56,12 @@ Everything runs completely on the device. No cloud, no account, no subscription.
 - A PC (any platform)
 - The Car Thing
 - A **data-capable** USB-C cable
-- `mira_firmware_v1.0.0.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
+- `mira_firmware_v1.1.0.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
 
 ---
 
 ## Flashing
+Flashing is now easier than ever thanks to Terbium's new easier flow. Note Terbium works best in a **Chromium-based browser** like Chrome or Edge.
 
 > Flash custom firmware at your own risk. Bricking is very unlikely, and the Car Thing can always be recovered by re-entering flash mode.
 
@@ -63,14 +69,25 @@ Everything runs completely on the device. No cloud, no account, no subscription.
    ```powershell
    irm https://driver.terbium.app/get | iex
    ```
-2. Download `mira_firmware_v1.0.0.zip` from the releases page. No need to unzip it.
-3. Hold **buttons 1 + 4** on the Car Thing while plugging in the USB cable.
+2. Hold **buttons 1 + 4** on the Car Thing while plugging in the USB cable.
    - The screen staying black means it's ready to flash.
-4. Open [Terbium](https://terbium.app) in **Google Chrome** or **Microsoft Edge**.
-5. Under **"Choose your firmware"**, click **Local archive** and select the Mira zip from step 2.
-   - Heads up: Terbium preselects a different firmware by default. Make sure it shows the Mira zip you picked before flashing.
-6. Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
-7. When Terbium says flashing is complete, unplug and replug the USB cable.
+3. Open and follow the steps on [Terbium](https://terbium.app) to get the device ready for flashing.
+4. On the "Choose your firmware" step select **Mira** from the list.
+   - The latest version should already be selected, if not make sure 1.1.0 is selected.  
+5. Press continue and let Terbium finish flashing the device. 
+   - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
+6. When Terbium says flashing is complete, unplug and replug the USB cable.
+
+
+Alternate method:
+If you wish to instead download the zip file for setup follow these instructions:
+
+1. Follow steps 1-3 from above.
+2. Download `mira_firmware_v1.1.0.zip` from the releases page. No need to unzip it.
+3. On the "Choose your firmware" step select **Local archive** and select the release zip.
+4. Press continue and let Terbium finish flashing the device.
+   - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
+5. When Terbium says flashing is complete, unplug and replug the USB cable.
 
 ---
 
@@ -118,6 +135,9 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
    sudo nmcli connection add type ethernet ifname enxXXXX con-name carthing-shared \
      ipv4.method shared ipv6.method ignore
 
+   # Bring it up. Required on a Raspberry Pi, harmless on desktop Linux.
+   sudo nmcli connection up carthing-shared
+
    # Option B: static IP. Use the interface whose MAC ends :e4:01 (the RNDIS one);
    # replace wlan0 with your internet interface.
    sudo ip addr add 172.16.42.1/24 dev enxXXXX
@@ -125,6 +145,10 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
    sudo sysctl -w net.ipv4.ip_forward=1
    sudo iptables -t nat -A POSTROUTING -s 172.16.42.0/24 -o wlan0 -j MASQUERADE
    ```
+
+   Option A also works on a Raspberry Pi. Thanks to
+   [apeschock](https://github.com/apeschock) for testing that and finding the
+   `nmcli connection up` step.
 
 4. After a few seconds Mira will pick up internet and show a QR code for signing in, scan it (or open the link) and sign into Spotify.
 
@@ -158,10 +182,6 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
 
 ---
 
-## Support
-
-Mira is free and open source. If you'd like to support development, you can do so on [GitHub Sponsors](https://github.com/sponsors/MustakimK) or [Ko-fi](https://ko-fi.com/MustakimK).
-
 ## Troubleshooting
 
 | Symptom | Try |
@@ -186,4 +206,21 @@ Please include: what you were doing (step by step), Mira firmware version, your 
   - `#feedback` - bugs, suggestions
   - `#showcase` - show off your setup
 
+## Community projects
+
+Built by other people. Not maintained by this project and not covered by Mira's support.
+
+- **[ESP32-S3 wireless gateway](https://github.com/Loic760/mira-esp32-controller-fork)**
+  by [Loic760](https://github.com/Loic760). Gives the Car Thing internet from a
+  ESP32-S3 board instead of a phone or PC, so it can run standalone, and exposes
+  brightness, playback state and screen control to Home Assistant through ESPHome.
+  It ships as its own modified firmware build rather than an add-on, so you flash it
+  instead of a Mira release, and the author has said he does not plan to maintain it.
+
+## Privacy
+
+Mira contacts a server a few times a day to fetch the time and check for updates. On first boot it also asks whether it may count your device using a one-way hashed ID, which helps me gauge whether Mira is worth continuing to improve. You can say no, and it will still get the time and update info either way. No account, no listening history, and voice control still runs entirely on the device.
+
+
+> "Spotify" and "Car Thing" are trademarks of Spotify AB. This software is not affiliated with or endorsed by Spotify AB.
 ---
