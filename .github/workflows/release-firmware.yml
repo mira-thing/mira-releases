@@ -1,0 +1,446 @@
+name: Release firmware
+
+# Builds a Car Thing firmware image from the four source repos and attaches it to a
+# draft release. Publishing that release, and uploading the asset to the download
+# worker, stay manual.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version, e.g. 1.2.0 (leading v optional)"
+        required: true
+        type: string
+      beta:
+        description: "Beta build - appends -beta to the version"
+        type: boolean
+        default: false
+      bundle_voice:
+        description: "Bundle the on-device voice stack"
+        type: boolean
+        default: true
+      manifest_pr:
+        description: "Open a draft PR updating manifest.json (stable builds only)"
+        type: boolean
+        default: true
+      daemon_ref:
+        description: "mira-daemon ref"
+        type: string
+        default: main
+      ui_ref:
+        description: "mira-ui ref"
+        type: string
+        default: main
+      firmware_ref:
+        description: "mira-firmware ref"
+        type: string
+        default: main
+      voice_ref:
+        description: "mira-voice ref"
+        type: string
+        default: main
+
+concurrency:
+  group: release-firmware-${{ inputs.version }}-${{ inputs.beta }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+defaults:
+  run:
+    shell: bash
+
+env:
+  # >=1.0 keeps a huggingface-cli on PATH that only prints a deprecation notice and
+  # exits 1. mira-voice's fetch-artifacts.sh probes for it by name, so an unpinned
+  # install fails the voice fetch rather than falling back to git-lfs.
+  HF_HUB_PIN: "0.36.2"
+  # Voice-bundled images have run 390-510 MB; this floor only catches a bundle that
+  # went missing entirely.
+  MIN_VOICE_IMAGE_BYTES: "300000000"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    # Inputs reach scripts as env vars, never as ${{ }} inside a run: body - a ref
+    # holding shell metacharacters must not be able to inject.
+    env:
+      GH_TOKEN: ${{ github.token }}
+      BUNDLE_VOICE: ${{ inputs.bundle_voice && '1' || '0' }}
+      IS_BETA: ${{ inputs.beta }}
+      RAW_VERSION: ${{ inputs.version }}
+      DAEMON_REF: ${{ inputs.daemon_ref }}
+      UI_REF: ${{ inputs.ui_ref }}
+      FIRMWARE_REF: ${{ inputs.firmware_ref }}
+      VOICE_REF: ${{ inputs.voice_ref }}
+
+    steps:
+      # ---------------------------------------------------------------- preflight
+      # Anything that can reject the run belongs here, ahead of the ~10 minute build.
+
+      - name: resolve version
+        run: |
+          set -euo pipefail
+          v="${RAW_VERSION#v}"
+          # Not a grep pipeline: under pipefail a `grep -q` that exits on the match can
+          # leave the writer with SIGPIPE, rejecting a valid version.
+          if [[ ! $v =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.]+)?$ ]]; then
+            echo "::error::invalid version '${RAW_VERSION}' - expected something like 1.2.0"
+            exit 1
+          fi
+          if [ "$IS_BETA" = "true" ]; then
+            v="${v}-beta"
+          fi
+          # build.sh names the zip mira_firmware_${IMAGE_VERSION}.zip and stamps
+          # meta.json with ${IMAGE_VERSION#v}; the tag and IMAGE_VERSION are one value.
+          {
+            echo "VERSION=${v}"
+            echo "TAG=v${v}"
+            echo "IMAGE_VERSION=v${v}"
+            echo "ZIP_NAME=mira_firmware_v${v}.zip"
+            echo "RELEASED_AT=$(date -u +%Y-%m-%dT00:00:00Z)"
+          } >> "$GITHUB_ENV"
+          echo "building v${v} (voice bundle: ${BUNDLE_VOICE})"
+
+      - name: check secrets are present
+        env:
+          DAEMON_ENV: ${{ secrets.MIRA_DAEMON_ENV }}
+          REPORT_KEY: ${{ secrets.MIRA_REPORT_KEY }}
+        run: |
+          set -euo pipefail
+          # Without these the Justfile degrades quietly - lrclib lyrics, keyless report
+          # URL. Acceptable for a community build, not for a release.
+          [ -n "$DAEMON_ENV" ] || { echo "::error::secret MIRA_DAEMON_ENV is unset or empty"; exit 1; }
+          [ -n "$REPORT_KEY" ] || { echo "::error::secret MIRA_REPORT_KEY is unset or empty"; exit 1; }
+
+      - name: reject an already-released version
+        run: |
+          set -euo pipefail
+          if state=$(gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json isDraft -q .isDraft 2>/dev/null); then
+            if [ "$state" = "true" ]; then
+              echo "::notice::replacing the existing draft release ${TAG}"
+              gh release delete "$TAG" -R "$GITHUB_REPOSITORY" --yes
+            else
+              echo "::error::${TAG} is already published - bump the version"
+              exit 1
+            fi
+          elif gh api "repos/${GITHUB_REPOSITORY}/git/ref/tags/${TAG}" >/dev/null 2>&1; then
+            echo "::error::tag ${TAG} already exists without a release"
+            exit 1
+          fi
+
+      - name: free disk space
+        run: |
+          set -euo pipefail
+          # The void rootfs, the ~1 GB voice bundle, node_modules, the builder image
+          # and a ~400 MB zip together exceed the runner's default free space.
+          df -h /
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
+                      /usr/local/.ghcup /usr/local/share/boost
+          sudo docker image prune -af || true
+          df -h /
+
+      # ---------------------------------------------------------------- checkout
+      # `just prepare` and scripts/get-voice-artifacts.sh both reach for ../mira-*,
+      # so the repos have to be siblings under $GITHUB_WORKSPACE.
+
+      - uses: actions/checkout@v7
+        with:
+          path: mira-releases
+
+      - uses: actions/checkout@v7
+        with:
+          repository: mira-thing/mira-daemon
+          ref: ${{ inputs.daemon_ref }}
+          path: mira-daemon
+          # crosscompile.sh bakes `git tag --points-at HEAD` into the binary's version,
+          # and checkout fetches --no-tags by default. Tags only, not the history.
+          fetch-tags: true
+
+      - uses: actions/checkout@v7
+        with:
+          repository: mira-thing/mira-ui
+          ref: ${{ inputs.ui_ref }}
+          path: mira-ui
+
+      - uses: actions/checkout@v7
+        with:
+          repository: mira-thing/mira-firmware
+          ref: ${{ inputs.firmware_ref }}
+          path: mira-firmware
+
+      - uses: actions/checkout@v7
+        with:
+          repository: mira-thing/mira-voice
+          ref: ${{ inputs.voice_ref }}
+          path: mira-voice
+
+      - name: record source commits
+        run: |
+          set -euo pipefail
+          for repo in daemon ui firmware voice; do
+            echo "SHA_${repo^^}=$(git -C "mira-${repo}" rev-parse HEAD)" >> "$GITHUB_ENV"
+          done
+
+      # ---------------------------------------------------------------- toolchain
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: mira-daemon/go.mod
+          cache-dependency-path: mira-daemon/go.sum
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: mira-ui/package-lock.json
+
+      - name: add armv7 rust target
+        run: rustup target add armv7-unknown-linux-musleabihf
+
+      - uses: actions/cache@v6
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            mira-daemon/iap2/sidecar/target
+          key: iap2-${{ runner.os }}-${{ hashFiles('mira-daemon/iap2/sidecar/Cargo.lock') }}
+          restore-keys: iap2-${{ runner.os }}-
+
+      - name: install just
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq just || cargo install just --locked
+          just --version
+
+      - name: install huggingface-cli
+        run: |
+          set -euo pipefail
+          # A venv rather than pip --user: runner images are PEP 668 externally managed.
+          python3 -m venv "$RUNNER_TEMP/hfvenv"
+          "$RUNNER_TEMP/hfvenv/bin/pip" install --quiet --upgrade pip
+          "$RUNNER_TEMP/hfvenv/bin/pip" install --quiet "huggingface_hub[cli]==${HF_HUB_PIN}"
+          echo "$RUNNER_TEMP/hfvenv/bin" >> "$GITHUB_PATH"
+
+      - name: verify huggingface-cli works
+        run: |
+          set -euo pipefail
+          # Catches a pin bumped past 1.0, whose huggingface-cli is a stub that exits 1
+          # while still satisfying fetch-artifacts.sh's `command -v` probe.
+          command -v huggingface-cli
+          huggingface-cli download --help >/dev/null
+
+      # ---------------------------------------------------------------- inputs
+
+      - name: stage daemon secret files
+        env:
+          DAEMON_ENV: ${{ secrets.MIRA_DAEMON_ENV }}
+          REPORT_KEY: ${{ secrets.MIRA_REPORT_KEY }}
+        run: |
+          set -euo pipefail
+          umask 077
+          printf '%s\n' "$DAEMON_ENV" > mira-daemon/.env
+          printf '%s' "$REPORT_KEY" | tr -d '\r\n' > mira-daemon/.report-key
+          # The Justfile splices this into a sed replacement, where a stray | & \ or
+          # newline yields a plausible but wrong report_url instead of an error.
+          grep -qE '^[A-Za-z0-9_-]+$' mira-daemon/.report-key \
+            || { echo "::error::MIRA_REPORT_KEY is not a bare url-safe token"; exit 1; }
+          echo ".env: $(wc -c < mira-daemon/.env) bytes, .report-key: $(wc -c < mira-daemon/.report-key) bytes"
+
+      - name: build iap2 sidecar
+        working-directory: mira-daemon
+        run: |
+          set -euo pipefail
+          # The Justfile's `-` prefix makes a failed sidecar build non-fatal, silently
+          # dropping iPhone volume control. Fatal here; prepare's rerun is cache-warm.
+          ./iap2/build.sh
+          test -s iap2/iap2-sidecar-armv7
+          case "$(file -b iap2/iap2-sidecar-armv7)" in
+            *ARM*) ;;
+            *) echo "::error::iap2 sidecar is not an ARM binary: $(file -b iap2/iap2-sidecar-armv7)"; exit 1 ;;
+          esac
+
+      # ---------------------------------------------------------------- build
+
+      - name: register qemu binfmt
+        working-directory: mira-firmware
+        run: just docker-qemu
+
+      - name: build firmware image
+        working-directory: mira-firmware
+        env:
+          VOICE_REPO: ${{ github.workspace }}/mira-voice
+        run: |
+          set -euo pipefail
+          mkdir -p output   # so the bind mount is not created root-owned
+          just docker-run
+
+      - name: verify the build consumed its inputs
+        working-directory: mira-firmware
+        run: |
+          set -euo pipefail
+          # `just prepare` soft-fails each of these (leading -, || true, 2>/dev/null),
+          # so a green prepare is no evidence the input reached the image.
+          test -s iap2-sidecar-armv7 \
+            || { echo "::error::iap2 sidecar missing - image would ship without iPhone volume control"; exit 1; }
+          case "$(file -b iap2-sidecar-armv7)" in
+            *ARM*) ;;
+            *) echo "::error::iap2 sidecar is not an ARM binary: $(file -b iap2-sidecar-armv7)"; exit 1 ;;
+          esac
+          test -s lp.env \
+            || { echo "::error::lp.env is empty - lyrics would fall back to lrclib"; exit 1; }
+          grep -q 'report_url' go-librespot-config.yml
+          grep -qF '?k=' go-librespot-config.yml \
+            || { echo "::error::report key was not injected into go-librespot-config.yml"; exit 1; }
+
+      - name: verify the image
+        working-directory: mira-firmware
+        run: |
+          set -euo pipefail
+          if [ ! -f "output/${ZIP_NAME}" ]; then
+            echo "::error::expected output/${ZIP_NAME}"
+            ls -la output
+            exit 1
+          fi
+          size=$(stat -c%s "output/${ZIP_NAME}")
+          # Catches a version that reached the filename but not the image. Written to a
+          # file rather than piped, for the same SIGPIPE reason as the version check.
+          unzip -p "output/${ZIP_NAME}" meta.json > "$RUNNER_TEMP/meta.json"
+          grep -qF "\"version\": \"${IMAGE_VERSION#v}\"" "$RUNNER_TEMP/meta.json" \
+            || { echo "::error::meta.json in the image does not carry version ${IMAGE_VERSION#v}"; exit 1; }
+          if [ "$BUNDLE_VOICE" = "1" ] && [ "$size" -lt "$MIN_VOICE_IMAGE_BYTES" ]; then
+            echo "::error::image is ${size} bytes - too small for a voice-bundled build"
+            exit 1
+          fi
+          ( cd output && sha256sum "$ZIP_NAME" ) > "$RUNNER_TEMP/${ZIP_NAME}.sha256"
+          {
+            echo "ZIP_SIZE=${size}"
+            echo "ZIP_SHA256=$(cut -d' ' -f1 < "$RUNNER_TEMP/${ZIP_NAME}.sha256")"
+          } >> "$GITHUB_ENV"
+          cat "$RUNNER_TEMP/${ZIP_NAME}.sha256"
+
+      # ---------------------------------------------------------------- publish
+
+      - name: compose release notes and manifest snippet
+        working-directory: mira-releases
+        run: |
+          set -euo pipefail
+          if [ "$IS_BETA" = "true" ]; then channel=beta; else channel=stable; fi
+          if [ "$BUNDLE_VOICE" = "1" ]; then voice=included; else voice=omitted; fi
+
+          jq --arg version     "$VERSION" \
+             --arg tag         "$TAG" \
+             --arg channel     "$channel" \
+             --arg url         "https://mira-firmware.mira-thing.workers.dev/${TAG}/${ZIP_NAME}" \
+             --arg size        "$ZIP_SIZE" \
+             --arg sha256      "$ZIP_SHA256" \
+             --arg released_at "$RELEASED_AT" \
+             -f .github/scripts/manifest-entry.jq manifest.json \
+             > "$RUNNER_TEMP/manifest.json"
+          jq --arg version "$VERSION" '.releases[$version]' "$RUNNER_TEMP/manifest.json" \
+             > "$RUNNER_TEMP/manifest-snippet.json"
+
+          cat > "$RUNNER_TEMP/notes.md" <<EOF
+          Draft build of Mira ${VERSION}.
+
+          | | |
+          | --- | --- |
+          | Image | \`${ZIP_NAME}\` |
+          | SHA-256 | \`${ZIP_SHA256}\` |
+          | Size | ${ZIP_SIZE} bytes ($(numfmt --to=iec-i --suffix=B "$ZIP_SIZE")) |
+          | Voice bundle | ${voice} |
+          | Built by | [run ${GITHUB_RUN_ID}](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}) |
+
+          Source:
+
+          | repo | ref | commit |
+          | --- | --- | --- |
+          | mira-daemon | \`${DAEMON_REF}\` | \`${SHA_DAEMON}\` |
+          | mira-ui | \`${UI_REF}\` | \`${SHA_UI}\` |
+          | mira-firmware | \`${FIRMWARE_REF}\` | \`${SHA_FIRMWARE}\` |
+          | mira-voice | \`${VOICE_REF}\` | \`${SHA_VOICE}\` |
+          EOF
+
+          {
+            cat "$RUNNER_TEMP/notes.md"
+            echo
+            echo '### manifest.json entry'
+            echo
+            echo '```json'
+            cat "$RUNNER_TEMP/manifest-snippet.json"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: create draft release
+        run: |
+          set -euo pipefail
+          args=(--draft --title "Mira ${VERSION}" --notes-file "$RUNNER_TEMP/notes.md")
+          if [ "$IS_BETA" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          # No --target: a draft release creates its tag only on publish, against the
+          # default branch as it stands then, so a merged manifest PR is included.
+          gh release create "$TAG" "${args[@]}" -R "$GITHUB_REPOSITORY" \
+            "mira-firmware/output/${ZIP_NAME}" \
+            "$RUNNER_TEMP/${ZIP_NAME}.sha256" \
+            "$RUNNER_TEMP/manifest-snippet.json"
+          gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json url -q .url
+
+      - name: skip the manifest PR for a beta
+        if: inputs.manifest_pr && inputs.beta
+        run: |
+          echo "::notice::manifest PR skipped. manifest.json has only a stable channel, so pointing channels.stable.latest at ${VERSION} would offer this beta to every stable user. The entry is attached to the release as manifest-snippet.json."
+
+      - name: open the manifest PR
+        if: inputs.manifest_pr && !inputs.beta
+        working-directory: mira-releases
+        run: |
+          set -euo pipefail
+          branch="release/${TAG}"
+          cp "$RUNNER_TEMP/manifest.json" manifest.json
+          # Attributed to whoever dispatched the run. The noreply address needs the
+          # numeric user id for GitHub to link the commit to that profile.
+          if actor_id=$(gh api "users/${GITHUB_ACTOR}" -q .id 2>/dev/null) && [ -n "$actor_id" ]; then
+            git config user.name  "$GITHUB_ACTOR"
+            git config user.email "${actor_id}+${GITHUB_ACTOR}@users.noreply.github.com"
+          else
+            echo "::warning::could not resolve a user id for ${GITHUB_ACTOR}; committing as the bot"
+            git config user.name  "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+          git checkout -B "$branch"
+          git add manifest.json
+          if git diff --cached --quiet; then
+            # main already carries this version. An empty commit fails, and a branch
+            # level with main leaves gh pr create nothing to open a PR from.
+            echo "::notice::manifest.json on main already carries ${VERSION} - no PR needed"
+            exit 0
+          fi
+          git commit -m "chore(manifest): add ${VERSION}
+
+          Generated by the release-firmware workflow. summary and changelog are
+          placeholders; update-policy.json is untouched because whether a release
+          is mandatory is an editorial call."
+          # The branch belongs to this workflow; a rerun regenerates the same entry.
+          git push --force -u origin "$branch"
+
+          # shellcheck disable=SC2016  # the backticks are markdown, not substitutions
+          body=$(printf 'Manifest entry for the **%s** draft release, generated by [run %s](%s/%s/actions/runs/%s), dispatched by @%s.\n\n- `download.url` points at the Cloudflare worker path the previous releases use; the asset still has to be uploaded there.\n- `summary` and `changelog` are `TODO:` placeholders.\n- `update-policy.json` is untouched.\n\nDraft release: %s/%s/releases/tag/%s\n' \
+            "$VERSION" "$GITHUB_RUN_ID" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" \
+            "$GITHUB_ACTOR" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$TAG")
+
+          if [ -n "$(gh pr list --head "$branch" --state open --json number -q '.[].number')" ]; then
+            echo "::notice::a PR for ${branch} is already open; pushed the regenerated manifest to it"
+          elif out=$(gh pr create --draft --base main --head "$branch" \
+                       --title "chore(manifest): add ${VERSION}" --body "$body" 2>&1); then
+            echo "$out"
+          else
+            # The release and the branch already exist, and a repo setting is the
+            # likeliest cause, so this should not fail the run.
+            echo "::warning::could not open the PR - branch ${branch} is pushed. Check Settings > Actions > General > 'Allow GitHub Actions to create and approve pull requests'. gh said: ${out}"
+          fi
