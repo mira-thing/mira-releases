@@ -10,7 +10,7 @@ see and control what's playing across all your devices.
 
 ## Support
 
-Mira is free and open source. If you'd like to support development, you can do so on [GitHub Sponsors](https://github.com/sponsors/MustakimK) or [Ko-fi](https://ko-fi.com/MustakimK). Every bit genuinely helps and it's what makes this sustainable to keep working on.
+Mira is free and open source. If you'd like to support development, you can do so on [GitHub Sponsors](https://github.com/sponsors/MustakimK) or [Ko-fi](https://ko-fi.com/MustakimK). Sponsors get early access to betas and access to the dev chat, both set up through [Discord](https://discord.gg/SR2Pne7EPM). Every bit genuinely helps and it's what makes this sustainable to keep working on.
 
 ---
 
