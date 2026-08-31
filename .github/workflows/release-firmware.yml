@@ -23,6 +23,10 @@ on:
         description: "Open a draft PR updating manifest.json (stable builds only)"
         type: boolean
         default: true
+      tag_sources:
+        description: "Tag the four source repos with the release tag"
+        type: boolean
+        default: true
       daemon_ref:
         description: "mira-daemon ref"
         type: string
@@ -72,6 +76,7 @@ jobs:
       GH_TOKEN: ${{ github.token }}
       BUNDLE_VOICE: ${{ inputs.bundle_voice && '1' || '0' }}
       IS_BETA: ${{ inputs.beta }}
+      SOURCE_REPOS: "mira-daemon mira-ui mira-firmware mira-voice"
       RAW_VERSION: ${{ inputs.version }}
       DAEMON_REF: ${{ inputs.daemon_ref }}
       UI_REF: ${{ inputs.ui_ref }}
@@ -132,6 +137,35 @@ jobs:
             echo "::error::tag ${TAG} already exists without a release"
             exit 1
           fi
+
+      - name: check the source repos can be tagged
+        if: inputs.tag_sources
+        env:
+          GH_TOKEN: ${{ secrets.MIRA_TAG_TOKEN }}
+        run: |
+          set -euo pipefail
+          # GITHUB_TOKEN is scoped to this repo, so cross-repo tagging needs a PAT.
+          # Checked here so a bad token fails in seconds, not after the build.
+          [ -n "${GH_TOKEN:-}" ] || {
+            echo "::error::secret MIRA_TAG_TOKEN is unset - it needs Contents: read and write on ${SOURCE_REPOS}"
+            exit 1
+          }
+          for repo in $SOURCE_REPOS; do
+            slug="mira-thing/${repo}"
+            if ! push=$(gh api "repos/${slug}" --jq .permissions.push 2>/dev/null); then
+              echo "::error::MIRA_TAG_TOKEN cannot read ${slug} - add it to the token's repository access"
+              exit 1
+            fi
+            [ "$push" = "true" ] || {
+              echo "::error::MIRA_TAG_TOKEN lacks Contents: write on ${slug}"
+              exit 1
+            }
+            if existing=$(gh api "repos/${slug}/git/ref/tags/${TAG}" --jq .object.sha 2>/dev/null); then
+              echo "::error::${slug} already has tag ${TAG} at ${existing} - delete it or pick another version"
+              exit 1
+            fi
+            echo "  ${slug}: writable, ${TAG} is free"
+          done
 
       - name: free disk space
         run: |
@@ -390,6 +424,65 @@ jobs:
             "$RUNNER_TEMP/${ZIP_NAME}.sha256" \
             "$RUNNER_TEMP/manifest-snippet.json"
           gh release view "$TAG" -R "$GITHUB_REPOSITORY" --json url -q .url
+
+      - name: tag the source repos
+        if: inputs.tag_sources
+        env:
+          GH_TOKEN: ${{ secrets.MIRA_TAG_TOKEN }}
+        run: |
+          set -euo pipefail
+          # After the release, so a tag only ever marks a commit that produced a verified
+          # image. mira-releases is excluded: publishing the draft mints its tag.
+          tag_message=$(printf 'Mira %s\n\n%s/%s/releases/tag/%s\n' \
+            "$VERSION" "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$TAG")
+          tagged_at=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+          actor_id=$(gh api "users/${GITHUB_ACTOR}" -q .id 2>/dev/null || echo "")
+          if [ -n "$actor_id" ]; then
+            tagger_name="$GITHUB_ACTOR"
+            tagger_email="${actor_id}+${GITHUB_ACTOR}@users.noreply.github.com"
+          else
+            tagger_name="github-actions[bot]"
+            tagger_email="41898282+github-actions[bot]@users.noreply.github.com"
+          fi
+
+          for repo in $SOURCE_REPOS; do
+            slug="mira-thing/${repo}"
+            case "$repo" in
+              mira-daemon)   sha="$SHA_DAEMON" ;;
+              mira-ui)       sha="$SHA_UI" ;;
+              mira-firmware) sha="$SHA_FIRMWARE" ;;
+              mira-voice)    sha="$SHA_VOICE" ;;
+            esac
+
+            # Preflight ran before the build; a tag could have landed since.
+            if existing=$(gh api "repos/${slug}/git/ref/tags/${TAG}" --jq .object.sha 2>/dev/null); then
+              if [ "$existing" = "$sha" ]; then
+                echo "  ${slug}: ${TAG} already at ${sha}"
+                continue
+              fi
+              # Moving a release tag would quietly invalidate every existing reference
+              # to it, so this is a hard stop rather than a force-update.
+              echo "::error::${slug} has ${TAG} at ${existing}, this build used ${sha}. Delete it first: gh api -X DELETE repos/${slug}/git/refs/tags/${TAG}"
+              exit 1
+            fi
+
+            # Built with jq rather than repeated -f flags: the tagger is a nested object
+            # and the message is multi-line, neither of which -f expresses cleanly.
+            payload=$(jq -n \
+              --arg tag "$TAG" \
+              --arg message "$tag_message" \
+              --arg object "$sha" \
+              --arg name "$tagger_name" \
+              --arg email "$tagger_email" \
+              --arg date "$tagged_at" \
+              '{tag: $tag, message: $message, object: $object, type: "commit",
+                tagger: {name: $name, email: $email, date: $date}}')
+            tag_sha=$(gh api "repos/${slug}/git/tags" --input - --jq .sha <<<"$payload")
+            gh api "repos/${slug}/git/refs" \
+              -f ref="refs/tags/${TAG}" \
+              -f sha="$tag_sha" --jq .ref > /dev/null
+            echo "  ${slug}: tagged ${TAG} -> ${sha}"
+          done
 
       - name: skip the manifest PR for a beta
         if: inputs.manifest_pr && inputs.beta
