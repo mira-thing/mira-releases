@@ -1,11 +1,17 @@
 {
   "policy_version": 1,
-  "mandatory": ["1.1.0"],
+  "mandatory": ["1.1.0", "1.2.0"],
   "notes": {
     "1.1.0": [
       "Clock/Screensaver",
       "Setup progress bar on first boot",
       "Fixes for Android and iPhone volume"
+    ],
+    "1.2.0": [
+      "Complete Spotify DJ support",
+      "More reliable Android volume",
+      "Reduced bloom effect on bright album art",
+      "Improved lyrics view colors"
     ]
   }
 }
