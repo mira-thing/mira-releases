@@ -56,7 +56,7 @@ Everything runs completely on the device. No cloud, no account, no subscription.
 - A PC (any platform)
 - The Car Thing
 - A **data-capable** USB-C cable
-- `mira_firmware_v1.1.0.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
+- `mira_firmware_v1.2.0.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
 
 ---
 
@@ -73,7 +73,7 @@ Flashing is now easier than ever thanks to Terbium's new easier flow. Note Terbi
    - The screen staying black means it's ready to flash.
 3. Open and follow the steps on [Terbium](https://terbium.app) to get the device ready for flashing.
 4. On the "Choose your firmware" step select **Mira** from the list.
-   - The latest version should already be selected, if not make sure 1.1.0 is selected.  
+   - The latest version should already be selected, if not make sure 1.2.0 is selected.  
 5. Press continue and let Terbium finish flashing the device. 
    - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
 6. When Terbium says flashing is complete, unplug and replug the USB cable.
@@ -83,7 +83,7 @@ Alternate method:
 If you wish to instead download the zip file for setup follow these instructions:
 
 1. Follow steps 1-3 from above.
-2. Download `mira_firmware_v1.1.0.zip` from the releases page. No need to unzip it.
+2. Download `mira_firmware_v1.2.0.zip` from the releases page. No need to unzip it.
 3. On the "Choose your firmware" step select **Local archive** and select the release zip.
 4. Press continue and let Terbium finish flashing the device.
    - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
