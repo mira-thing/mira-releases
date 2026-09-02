@@ -167,17 +167,6 @@ jobs:
             echo "  ${slug}: writable, ${TAG} is free"
           done
 
-      - name: free disk space
-        run: |
-          set -euo pipefail
-          # The void rootfs, the ~1 GB voice bundle, node_modules, the builder image
-          # and a ~400 MB zip together exceed the runner's default free space.
-          df -h /
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc \
-                      /usr/local/.ghcup /usr/local/share/boost
-          sudo docker image prune -af || true
-          df -h /
-
       # ---------------------------------------------------------------- checkout
       # `just prepare` and scripts/get-voice-artifacts.sh both reach for ../mira-*,
       # so the repos have to be siblings under $GITHUB_WORKSPACE.
