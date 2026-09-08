@@ -17,7 +17,9 @@
       "Improved lyrics view colors"
     ],
     "1.2.1": [
-      "TODO: short bullets for the on-device updater, only the first 3 are shown"
+      "Fix lyrics showing wrong data",
+      "Fix karaoke lyrics",
+      "Fix volume controls on tablets"
     ]
   }
 }
