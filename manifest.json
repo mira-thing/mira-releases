@@ -1,7 +1,7 @@
 {
   "$schema": "https://terbium.app/schemas/manifest/v1.json",
   "manifest_version": 1,
-  "updated_at": "2026-09-01T00:00:00Z",
+  "updated_at": "2026-09-07T00:00:00Z",
   "project": {
     "id": "mira",
     "name": "Mira",
@@ -23,8 +23,9 @@
       "description": "Release builds of Mira.",
       "stability": "stable",
       "default": true,
-      "latest": "1.2.0",
+      "latest": "1.2.1",
       "releases": [
+        "1.2.1",
         "1.2.0",
         "1.1.0",
         "1.0.0"
@@ -32,6 +33,21 @@
     }
   },
   "releases": {
+    "1.2.1": {
+      "version": "1.2.1",
+      "channel": "stable",
+      "released_at": "2026-09-07T00:00:00Z",
+      "summary": "Fix broken lyrics and tablet volume controls",
+      "changelog": "- Fix lyrics showing gibberish on songs with no lyrics found - Fix karaoke lyrics - Fix volume controls on tablets",
+      "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.2.1",
+      "yanked": null,
+      "deprecated": false,
+      "download": {
+        "url": "https://mira-firmware.mira-thing.workers.dev/v1.2.1/mira_firmware_v1.2.1.zip",
+        "size": 505935185,
+        "sha256": "5533424790d50deec4f7a7ffa07620835f58152db7845de4e543cdf524f7d705"
+      }
+    },
     "1.2.0": {
       "version": "1.2.0",
       "channel": "stable",

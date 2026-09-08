@@ -1,6 +1,9 @@
 {
   "policy_version": 1,
-  "mandatory": ["1.1.0", "1.2.0"],
+  "mandatory": [
+    "1.1.0",
+    "1.2.0"
+  ],
   "notes": {
     "1.1.0": [
       "Clock/Screensaver",
@@ -12,6 +15,11 @@
       "More reliable Android volume",
       "Reduced bloom effect on bright album art",
       "Improved lyrics view colors"
+    ],
+    "1.2.1": [
+      "Fix lyrics showing wrong data",
+      "Fix karaoke lyrics",
+      "Fix volume controls on tablets"
     ]
   }
 }
