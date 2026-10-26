@@ -127,10 +127,10 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
    **Linux:**
    ```bash
    # The Car Thing shows up as a USB Ethernet interface, its MAC starts with a0:b1:c2.
-   # On Linux you may see TWO (it supports both USB-Ethernet modes); either works.
+   # Use the one whose MAC ends :e4:03 (usually enxa0b1c2d3e403).
    ip -br link | grep -i a0:b1:c2
 
-   # Option A: NetworkManager shared mode.
+   # Option A: NetworkManager shared mode. Needs dnsmasq (sudo dnf install dnsmasq).
    # Replace enxXXXX with the Car Thing interface name from above.
    sudo nmcli connection add type ethernet ifname enxXXXX con-name carthing-shared \
      ipv4.method shared ipv6.method ignore
@@ -138,8 +138,7 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
    # Bring it up. Required on a Raspberry Pi, harmless on desktop Linux.
    sudo nmcli connection up carthing-shared
 
-   # Option B: static IP. Use the interface whose MAC ends :e4:01 (the RNDIS one);
-   # replace wlan0 with your internet interface.
+   # Option B: static IP. Replace wlan0 with your internet interface (ip route show default).
    sudo ip addr add 172.16.42.1/24 dev enxXXXX
    sudo ip link set enxXXXX up
    sudo sysctl -w net.ipv4.ip_forward=1
