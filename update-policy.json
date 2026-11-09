@@ -20,6 +20,9 @@
       "Fix lyrics showing wrong data",
       "Fix karaoke lyrics",
       "Fix volume controls on tablets"
+    ],
+    "1.3.0": [
+      "TODO: short bullets for the on-device updater, only the first 3 are shown"
     ]
   }
 }
