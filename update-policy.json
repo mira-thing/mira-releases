@@ -2,7 +2,8 @@
   "policy_version": 1,
   "mandatory": [
     "1.1.0",
-    "1.2.0"
+    "1.2.0",
+    "1.3.0"
   ],
   "notes": {
     "1.1.0": [
@@ -22,7 +23,9 @@
       "Fix volume controls on tablets"
     ],
     "1.3.0": [
-      "TODO: short bullets for the on-device updater, only the first 3 are shown"
+      "Redesigned player and menus",
+      "See now playing on screensaver",
+      "Updates keep your settings"
     ]
   }
 }
