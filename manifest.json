@@ -39,7 +39,7 @@
       "channel": "stable",
       "released_at": "2026-11-19T00:00:00Z",
       "summary": "Redesigned player and menus, settings kept across updates, and stability fixes.",
-      "changelog": "- Redesigned player views\n- Now playing on the screensaver (thanks to Lukk1a)\n- New Quick access menu and power menu, both work with the knob\n- Updating from 1.1 or newer keeps your Spotify sign-in, settings and Bluetooth pairings",
+      "changelog": "- Redesigned player views\n- Now playing on the screensaver (thanks to Lukk1a)\n- Redesigned Quick access and power menus, both work with the knob\n- Updating from 1.1 or newer keeps your Spotify sign-in, settings and Bluetooth pairings",
       "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.3.0",
       "yanked": null,
       "deprecated": false,
