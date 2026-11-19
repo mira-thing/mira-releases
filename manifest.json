@@ -1,12 +1,12 @@
 {
   "$schema": "https://terbium.app/schemas/manifest/v1.json",
   "manifest_version": 1,
-  "updated_at": "2026-09-07T00:00:00Z",
+  "updated_at": "2026-11-19T00:00:00Z",
   "project": {
     "id": "mira",
     "name": "Mira",
     "description": "Free, open source, standalone firmware for the Spotify Car Thing. No companion app, no account, no subscription.",
-    "publisher": "MustakimK",
+    "publisher": "Mira Team",
     "publisher_url": "https://github.com/mira-thing",
     "license": "GPL-3.0/Apache-2.0",
     "website": "https://github.com/mira-thing/mira-releases",
@@ -23,8 +23,9 @@
       "description": "Release builds of Mira.",
       "stability": "stable",
       "default": true,
-      "latest": "1.2.1",
+      "latest": "1.3.0",
       "releases": [
+        "1.3.0",
         "1.2.1",
         "1.2.0",
         "1.1.0",
@@ -33,12 +34,27 @@
     }
   },
   "releases": {
+    "1.3.0": {
+      "version": "1.3.0",
+      "channel": "stable",
+      "released_at": "2026-11-19T00:00:00Z",
+      "summary": "Redesigned player and menus, settings kept across updates, and stability fixes.",
+      "changelog": "- Redesigned player views\n- Now playing on the screensaver (thanks to Lukk1a)\n- Redesigned Quick access and power menus, both work with the knob\n- Updating from 1.1 or newer keeps your Spotify sign-in, settings and Bluetooth pairings",
+      "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.3.0",
+      "yanked": null,
+      "deprecated": false,
+      "download": {
+        "url": "https://mira-firmware.mira-thing.workers.dev/v1.3.0/mira_firmware_v1.3.0.zip",
+        "size": 506269937,
+        "sha256": "694c0bbfedca7fc925566b11152a8fd44625a6f02f51e9341faa1c4e5aab84d6"
+      }
+    },
     "1.2.1": {
       "version": "1.2.1",
       "channel": "stable",
       "released_at": "2026-09-07T00:00:00Z",
       "summary": "Fix broken lyrics and tablet volume controls",
-      "changelog": "- Fix lyrics showing gibberish on songs with no lyrics found - Fix karaoke lyrics - Fix volume controls on tablets",
+      "changelog": "- Fix lyrics showing gibberish on songs with no lyrics found\n- Fix karaoke lyrics\n- Fix volume controls on tablets",
       "changelog_url": "https://github.com/mira-thing/mira-releases/releases/tag/v1.2.1",
       "yanked": null,
       "deprecated": false,

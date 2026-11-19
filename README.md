@@ -33,8 +33,10 @@ Mira is free and open source. If you'd like to support development, you can do s
 - **Pick which of your devices plays** right from the Car Thing
 - **Save the current song to Liked Songs**
 - **Pair multiple Bluetooth phones**
-- **Clock Screensaver**
+- **Quick access menu** for lyrics, karaoke and mic, plus a power menu, all usable with the knob
+- **Clock screensaver** that shows what's playing
 - **Customizable Settings** lyric-sync offset, knob volume step, brightness (auto or manual), UI Scale
+- **Updates keep your settings** your Spotify sign-in, settings and Bluetooth pairings carry over when you flash a new version
 
 ### Voice control
 
@@ -56,7 +58,7 @@ Everything runs completely on the device. No cloud, no account, no subscription.
 - A PC (any platform)
 - The Car Thing
 - A **data-capable** USB-C cable
-- `mira_firmware_v1.2.1.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
+- `mira_firmware_v1.3.0.zip`, download it from the [latest release](https://github.com/mira-thing/mira-releases/releases/latest)
 
 ---
 
@@ -73,17 +75,18 @@ Flashing is now easier than ever thanks to Terbium's new easier flow. Note Terbi
    - The screen staying black means it's ready to flash.
 3. Open and follow the steps on [Terbium](https://terbium.app) to get the device ready for flashing.
 4. On the "Choose your firmware" step select **Mira** from the list.
-   - The latest version should already be selected, if not make sure 1.2.1 is selected.  
+   - The latest version should already be selected, if not make sure 1.3.0 is selected.  
 5. Press continue and let Terbium finish flashing the device. 
    - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
 6. When Terbium says flashing is complete, unplug and replug the USB cable.
 
+Updating from 1.1 or newer keeps your Spotify sign-in, settings and Bluetooth pairings, so there is no setup to redo. To start fresh instead, see [Factory reset](#factory-reset).
 
 Alternate method:
 If you wish to instead download the zip file for setup follow these instructions:
 
 1. Follow steps 1-3 from above.
-2. Download `mira_firmware_v1.2.1.zip` from the releases page. No need to unzip it.
+2. Download `mira_firmware_v1.3.0.zip` from the releases page. No need to unzip it.
 3. On the "Choose your firmware" step select **Local archive** and select the release zip.
 4. Press continue and let Terbium finish flashing the device.
    - Wait ~5-10 minutes. If it errors or the progress bar stalls for more than a few minutes, start again from step 3.
@@ -169,9 +172,14 @@ Give the Car Thing ~5 minutes on first boot, until the "choose a connection" scr
 
 - Play something on any Spotify device and Mira displays it.
 - **Tap** the controls for play/pause/next/prev, **drag** the progress bar to scrub, **tap a lyric line** to jump to it.
-- **Physical controls:** turn the **knob** for volume (press = play/pause), the **4 presets** jump to a saved context (press-and-hold a preset to save the current playlist/artist/podcast), **back** steps back, **power** opens the power menu (double press = sleep).
+- **Physical controls:** turn the **knob** for volume (press = play/pause), the **4 presets** jump to a saved context (press-and-hold a preset to save the current playlist/artist/podcast), **back** steps back, **power** opens the power menu with Sleep, Restart and Reset (double press = screensaver).
+- **In Quick access and the power menu**, turn the knob to move between items and press it to select.
 - **Gestures:** one-finger swipe left/right to skip; two-finger swipe up/down to switch album art or lyric views.
-- The **3-dot menu** has the lyrics + karaoke + mic toggles, Bluetooth management, the device picker, and **Settings** (lyric offset, knob volume step, brightness).
+- The **3-dot menu** opens Quick access: the lyrics, karaoke and mic toggles, the device picker, and **Settings** (UI size, lyric sync, volume per turn, brightness, Bluetooth pairing).
+
+### Factory reset
+
+To erase everything and start from Spotify sign-in, either pick **Reset** in the power menu, or hold **buttons 2 + 3** while plugging in the USB cable.
 
 ---
 
