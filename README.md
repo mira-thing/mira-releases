@@ -1,6 +1,6 @@
 # Mira
 
-<img width="4080" height="2295" alt="20261114_204834" src="https://github.com/user-attachments/assets/565def21-141d-4661-9d9f-a2bfb4a7c407" />
+<img width="4080" height="2295" alt="hero" src="https://github.com/user-attachments/assets/565def21-141d-4661-9d9f-a2bfb4a7c407" />
 
 
 Free, open source, standalone firmware for the discontinued Spotify Car Thing.
